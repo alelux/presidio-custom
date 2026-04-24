@@ -39,4 +39,4 @@ services:
 
 networks:
   	openwebui_procedures_demo:
-    external: true
+      external: true
