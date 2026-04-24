@@ -25,6 +25,16 @@ services:
     mem_limit: 512m
     networks:
       - procedures_demo
+      
+  presidio-proxy:
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    container_name: presidio-proxy
+    restart: unless-stopped
+    networks:
+      - procedures_demo
+    mem_limit: 256m
 
 networks:
   procedures_demo:
