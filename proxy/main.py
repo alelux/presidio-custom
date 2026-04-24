@@ -85,12 +85,14 @@ def process_messages(messages: list, session_mapping: dict) -> tuple:
     for msg in messages:
         if msg.get("role") == "user" and isinstance(msg.get("content"), str):
             text = msg["content"]
+            print(f"[PROXY] Message original: {text}")  # ← ajouter
             language = detect_language(text)
             results = analyze(text, language)
             if results:
                 new_mapping = build_mapping(text, results)
                 session_mapping.update(new_mapping)
                 text = anonymize_text(text, results, new_mapping)
+            print(f"[PROXY] Message anonymisé: {text}")  # ← ajouter
             processed.append({**msg, "content": text})
         else:
             content = msg.get("content", "")
