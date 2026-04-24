@@ -5,10 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: presidio-analyzer-multilang:latest
     container_name: presidio-analyzer
-    ports:
-      - "5002:3000"
+    restart: unless-stopped
+    networks:
+      - procedures_demo
     deploy:
       resources:
         limits:
@@ -16,7 +16,6 @@ services:
           cpus: '2'
         reservations:
           memory: 800m
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
@@ -27,8 +26,9 @@ services:
   presidio-anonymizer:
     image: mcr.microsoft.com/presidio-anonymizer:latest
     container_name: presidio-anonymizer
-    ports:
-      - "5001:3000"
+    restart: unless-stopped
+    networks:
+      - procedures_demo
     deploy:
       resources:
         limits:
@@ -36,8 +36,7 @@ services:
           cpus: '0.5'
         reservations:
           memory: 128m
-    restart: unless-stopped
 
 networks:
-  default:
-    name: presidio-net
+  procedures_demo:
+    external: true
