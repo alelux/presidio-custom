@@ -80,25 +80,44 @@ def deanonymize(text: str, mapping: dict) -> str:
         text = text.replace(placeholder, original)
     return text
 
+INTERNAL_PROMPTS = [
+    "### Task:",
+    "### Output:",
+    "Generate a concise",
+    "Generate 1-3 broad tags",
+    "Write all follow-up questions",
+    "JSON format:",
+    "Chat History:",
+]
+
 def process_messages(messages: list, session_mapping: dict) -> tuple:
     processed = []
     for msg in messages:
         if msg.get("role") == "user" and isinstance(msg.get("content"), str):
             text = msg["content"]
-            print(f"[PROXY] Message original: {text}")  # ← ajouter
+
+            # Prompts internes Open WebUI — désanonymiser uniquement, ne pas anonymiser
+            if any(p in text for p in INTERNAL_PROMPTS):
+                text = deanonymize(text, session_mapping)
+                processed.append({**msg, "content": text})
+                continue
+
+            print(f"[PROXY] Message original: {text}")
             language = detect_language(text)
             results = analyze(text, language)
             if results:
                 new_mapping = build_mapping(text, results)
                 session_mapping.update(new_mapping)
                 text = anonymize_text(text, results, new_mapping)
-            print(f"[PROXY] Message anonymisé: {text}")  # ← ajouter
+            print(f"[PROXY] Message anonymisé: {text}")
             processed.append({**msg, "content": text})
+
         else:
             content = msg.get("content", "")
             if isinstance(content, str):
                 content = deanonymize(content, session_mapping)
             processed.append({**msg, "content": content})
+
     return processed, session_mapping
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
