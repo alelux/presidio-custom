@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  presidio-analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: presidio-analyzer-multilang:latest
+    container_name: presidio-analyzer
+    ports:
+      - "5002:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: '2'
+        reservations:
+          memory: 800m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 90s
+
+  presidio-anonymizer:
+    image: mcr.microsoft.com/presidio-anonymizer:latest
+    container_name: presidio-anonymizer
+    ports:
+      - "5001:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.5'
+        reservations:
+          memory: 128m
+    restart: unless-stopped
+
+networks:
+  default:
+    name: presidio-net
