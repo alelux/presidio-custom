@@ -60,12 +60,20 @@ def anonymize_text(text: str, results: list, mapping: dict) -> str:
                 if orig == original:
                     anon_by_type[result["entity_type"]] = {"type": "replace", "new_value": ph}
 
+        if not anon_by_type:
+            return text  # ← protection si mapping vide
+
         r = requests.post(f"{PRESIDIO_ANONYMIZER}/anonymize",
             json={"text": text, "anonymizers": anon_by_type, "analyzer_results": results},
             timeout=10)
-        return r.json()["text"] if r.status_code == 200 else text
-    except:
-        return text
+        
+        result_text = r.json()["text"] if r.status_code == 200 else text
+        
+        # ← protection si résultat vide
+        return result_text if result_text.strip() else text
+    except Exception as e:
+        print(f"[PROXY] Erreur anonymize_text: {e}")
+        return text  # ← toujours retourner le texte original en cas d'erreur
 
 def deanonymize(text: str, mapping: dict) -> str:
     for placeholder, original in mapping.items():
