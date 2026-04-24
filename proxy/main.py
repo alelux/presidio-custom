@@ -10,8 +10,8 @@ PRESIDIO_ANALYZER = "http://presidio-analyzer:3000"
 PRESIDIO_ANONYMIZER = "http://presidio-anonymizer:3000"
 BEDROCK_GATEWAY = "http://bedrock-gateway:8080"
 
-# Mapping global par session (clé = hash du texte original)
-session_mappings = {}
+# Mapping global persistant — clé = user identifié par Authorization header
+global_mappings = {}
 
 def detect_language(text: str) -> str:
     fr_words = ["je", "mon", "nom", "est", "bonjour", "merci", "le", "la", "les", "appelle"]
@@ -53,13 +53,6 @@ def anonymize_text(text: str, results: list, mapping: dict) -> str:
     if not results:
         return text
     try:
-        anonymizers = {
-            placeholder: {"type": "replace", "new_value": placeholder}
-            for placeholder, original in mapping.items()
-            for r in results
-            if text[r["start"]:r["end"]] == original
-        }
-        # Simplification : un anonymizer par entity_type
         anon_by_type = {}
         for result in results:
             original = text[result["start"]:result["end"]]
@@ -79,8 +72,7 @@ def deanonymize(text: str, mapping: dict) -> str:
         text = text.replace(placeholder, original)
     return text
 
-def process_messages(messages: list, mapping: dict) -> tuple[list, dict]:
-    """Anonymise tous les messages user et retourne le mapping mis à jour"""
+def process_messages(messages: list, session_mapping: dict) -> tuple:
     processed = []
     for msg in messages:
         if msg.get("role") == "user" and isinstance(msg.get("content"), str):
@@ -89,16 +81,15 @@ def process_messages(messages: list, mapping: dict) -> tuple[list, dict]:
             results = analyze(text, language)
             if results:
                 new_mapping = build_mapping(text, results)
-                mapping.update(new_mapping)
+                session_mapping.update(new_mapping)
                 text = anonymize_text(text, results, new_mapping)
             processed.append({**msg, "content": text})
         else:
-            # Désanonymiser les messages assistant existants
             content = msg.get("content", "")
             if isinstance(content, str):
-                content = deanonymize(content, mapping)
+                content = deanonymize(content, session_mapping)
             processed.append({**msg, "content": content})
-    return processed, mapping
+    return processed, session_mapping
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 async def proxy(request: Request, path: str):
@@ -108,14 +99,18 @@ async def proxy(request: Request, path: str):
         if k.lower() not in ("host", "content-length", "transfer-encoding")
     }
 
-    mapping = {}
+    # Identifier la session par le token Authorization
+    session_key = headers.get("authorization", "default")
+    if session_key not in global_mappings:
+        global_mappings[session_key] = {}
+    session_mapping = global_mappings[session_key]
 
-    # Intercepter uniquement les chat completions
     if "chat/completions" in path and request.method == "POST":
         try:
             data = json.loads(body)
             messages = data.get("messages", [])
-            messages, mapping = process_messages(messages, mapping)
+            messages, session_mapping = process_messages(messages, session_mapping)
+            global_mappings[session_key] = session_mapping
             data["messages"] = messages
             body = json.dumps(data).encode()
             headers["content-length"] = str(len(body))
@@ -149,7 +144,9 @@ async def proxy(request: Request, path: str):
                                 for choice in chunk_data.get("choices", []):
                                     delta = choice.get("delta", {})
                                     if "content" in delta and delta["content"]:
-                                        delta["content"] = deanonymize(delta["content"], mapping)
+                                        delta["content"] = deanonymize(
+                                            delta["content"], session_mapping
+                                        )
                                 yield f"data: {json.dumps(chunk_data)}\n\n"
                             except:
                                 yield chunk
@@ -157,6 +154,7 @@ async def proxy(request: Request, path: str):
                             yield chunk
 
         return StreamingResponse(stream_response(), media_type="text/event-stream")
+
     else:
         async with httpx.AsyncClient(timeout=120) as client:
             response = await client.request(
@@ -171,7 +169,7 @@ async def proxy(request: Request, path: str):
                 for choice in resp_data.get("choices", []):
                     if "message" in choice and "content" in choice["message"]:
                         choice["message"]["content"] = deanonymize(
-                            choice["message"]["content"], mapping
+                            choice["message"]["content"], session_mapping
                         )
                 resp_headers = {
                     k: v for k, v in response.headers.items()
