@@ -8,7 +8,7 @@ services:
     container_name: presidio-analyzer
     restart: unless-stopped
     networks:
-      - openwebui_procedures_demo
+      - procedures_demo
     deploy:
       resources:
         limits:
@@ -28,7 +28,7 @@ services:
     container_name: presidio-anonymizer
     restart: unless-stopped
     networks:
-      - openwebui_procedures_demo
+      - procedures_demo
     deploy:
       resources:
         limits:
@@ -38,5 +38,6 @@ services:
           memory: 128m
 
   networks:
-    openwebui_procedures_demo:
+    procedures_demo:
       external: true
+      name: openwebui_procedures_demo
