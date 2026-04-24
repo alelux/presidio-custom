@@ -103,9 +103,10 @@ def process_messages(messages: list, mapping: dict) -> tuple[list, dict]:
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 async def proxy(request: Request, path: str):
     body = await request.body()
-    headers = dict(request.headers)
-    headers.pop("host", None)
-    headers.pop("content-length", None)
+    headers = {
+        k: v for k, v in request.headers.items()
+        if k.lower() not in ("host", "content-length", "transfer-encoding")
+    }
 
     mapping = {}
 
