@@ -116,6 +116,8 @@ async def proxy(request: Request, path: str):
             headers["content-length"] = str(len(body))
         except Exception as e:
             print(f"[PROXY] Erreur anonymisation: {e}")
+            import traceback
+            traceback.print_exc()
 
     target_url = f"{BEDROCK_GATEWAY}/{path}"
     is_streaming = False
