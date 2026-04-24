@@ -1,0 +1,7 @@
+FROM mcr.microsoft.com/presidio-analyzer:latest
+
+RUN python -m spacy download en_core_web_sm && \
+    python -m spacy download fr_core_news_sm && \
+    python -m spacy download it_core_news_sm
+
+COPY nlp_config.yaml /usr/bin/presidio_analyzer/conf/default.yaml
