@@ -28,7 +28,7 @@ services:
     container_name: presidio-anonymizer
     restart: unless-stopped
     networks:
-      - 	openwebui_procedures_demo
+      - openwebui_procedures_demo
     deploy:
       resources:
         limits:
