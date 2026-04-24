@@ -37,6 +37,6 @@ services:
         reservations:
           memory: 128m
 
-networks:
+  networks:
   	openwebui_procedures_demo:
       external: true
