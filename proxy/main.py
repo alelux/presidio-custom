@@ -8,7 +8,7 @@ app = FastAPI()
 
 PRESIDIO_ANALYZER = "http://presidio-analyzer:3000"
 PRESIDIO_ANONYMIZER = "http://presidio-anonymizer:3000"
-BEDROCK_GATEWAY = "http://bedrock-gateway:80"
+BEDROCK_GATEWAY = "http://bedrock-gateway:8080"
 
 # Mapping global par session (clé = hash du texte original)
 session_mappings = {}
