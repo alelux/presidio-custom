@@ -173,14 +173,22 @@ async def proxy(request: Request, path: str):
                         choice["message"]["content"] = deanonymize(
                             choice["message"]["content"], mapping
                         )
+                resp_headers = {
+                    k: v for k, v in response.headers.items()
+                    if k.lower() not in ("content-length", "content-encoding", "transfer-encoding")
+                }
                 return Response(
                     content=json.dumps(resp_data),
                     status_code=response.status_code,
-                    headers=dict(response.headers)
+                    headers=resp_headers
                 )
             except:
+                resp_headers = {
+                    k: v for k, v in response.headers.items()
+                    if k.lower() not in ("content-length", "content-encoding", "transfer-encoding")
+                }
                 return Response(
                     content=response.content,
                     status_code=response.status_code,
-                    headers=dict(response.headers)
+                    headers=resp_headers
                 )
