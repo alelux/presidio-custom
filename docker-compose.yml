@@ -28,7 +28,7 @@ services:
     container_name: presidio-anonymizer
     restart: unless-stopped
     networks:
-      - procedures_demo
+      - 	openwebui_procedures_demo
     deploy:
       resources:
         limits:
@@ -38,5 +38,5 @@ services:
           memory: 128m
 
 networks:
-  procedures_demo:
+  	openwebui_procedures_demo:
     external: true
