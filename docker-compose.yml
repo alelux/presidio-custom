@@ -38,5 +38,5 @@ services:
           memory: 128m
 
   networks:
-  	openwebui_procedures_demo:
+    openwebui_procedures_demo:
       external: true
